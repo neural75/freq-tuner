@@ -1,0 +1,10 @@
+{
+  "name": "freq-tuner",
+  "description": "Routes the volume knob to tune the radio in freq-tuner while it has focus",
+  "uuid": "freq-tuner@neural75.github.com",
+  "url": "https://github.com/neural75/freq-tuner",
+  "shell-version": [
+    "50"
+  ],
+  "version": 1
+}
