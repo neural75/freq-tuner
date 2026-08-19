@@ -16,7 +16,7 @@ applications it reacts to, and up to six callbacks.
 struct ft_cfg {
     const char *gqrx_host;  /* gqrx plugin: remote-control host  */
     int         gqrx_port;  /* gqrx plugin: remote-control port  */
-    int         verbose;    /* log to stderr when set            */
+    int         verbose;    /* generic: log to stderr when set   */
 };
 
 struct ft_plugin {
@@ -31,6 +31,14 @@ struct ft_plugin {
     void (*deinit)(void);                     /* once at shutdown     */
 };
 ```
+
+`struct ft_cfg` is the single shared configuration handed to every plugin's
+`init`. It currently contains the gqrx plugin's own fields plus the generic
+`verbose` flag. **`gqrx_host`/`gqrx_port` are not part of the plugin contract** —
+they are just one plugin's settings that happen to live here. Your plugin does
+not use them and must not rely on them; they are populated only because the
+gqrx plugin is compiled in. See [Your own settings](#your-own-settings) for
+how to add fields that belong to your plugin.
 
 - **`init`** — called once at startup with the runtime configuration. Use it
   to reset state and copy whatever the plugin needs out of `cfg`. Return 0 on
@@ -107,19 +115,85 @@ getwindowclassname` on an X11 session).
           src/plugins/gqrx.c src/plugins/<name>.c
    ```
 
-5. **Build** with `make`. Every plugin compiled in is always active;
+5. **Add your settings**, if any — see [Your own settings](#your-own-settings).
+
+6. **Build** with `make`. Every plugin compiled in is always active;
    matching decides which one owns the knob for the focused window.
 
 ## main.c
 
 The core (`src/main.c`) needs no changes for a new plugin: it reads raw evdev
 events on stdin, matches the focused window class against the registry, and
-dispatches to the active plugin's `tick`/`press`. The only main.c coupling to
-a specific plugin is the gqrx-specific CLI options (`--gqrx-host`,
-`--gqrx-port`) and their default values, which are passed through in
-`struct ft_cfg`. If a new plugin needs its own settings, extend `struct
-ft_cfg`, add matching `getopt_long` entries in `parse_args`, and read them
-inside the plugin's `init`.
+dispatches to the active plugin's `tick`/`press`.
+
+### Your own settings
+
+`struct ft_cfg` is a fixed, shared struct, so adding a setting means adding a
+field to it and wiring it through `main.c` once. Every plugin compiled in sees
+every field; ignore the ones that are not yours.
+
+For a plugin with a host and a port, the changes are:
+
+1. **Add your fields to `struct ft_cfg`** in `src/plugin.h` (never reuse the
+   gqrx fields — add your own, named for your plugin):
+
+   ```c
+   struct ft_cfg {
+       const char *gqrx_host;  /* gqrx plugin: remote-control host  */
+       int         gqrx_port;  /* gqrx plugin: remote-control port  */
+       const char *myapp_host; /* your plugin: host                 */
+       int         myapp_port; /* your plugin: port                 */
+       int         verbose;    /* generic: log to stderr when set   */
+   };
+   ```
+
+2. **Parse them in `main.c`'s `parse_args`** — add entries to `longopts`
+   (with a fresh `val` integer) and to the `switch`:
+
+   ```c
+   static const struct option longopts[] = {
+       { "gqrx-host",     required_argument, NULL, 1 },
+       { "gqrx-port",     required_argument, NULL, 2 },
+       { "myapp-host",    required_argument, NULL, 4 },
+       { "myapp-port",    required_argument, NULL, 5 },
+       ...
+   };
+   ...
+   case 4: cfg->myapp_host = optarg; break;
+   case 5: cfg->myapp_port = atoi(optarg); break;
+   ```
+
+   and set defaults in `parse_args` next to the gqrx ones:
+
+   ```c
+   cfg->myapp_host = "127.0.0.1";
+   cfg->myapp_port = 0;   /* your default port */
+   ```
+
+3. **Read them in your `init`** — copy the values you need into your plugin's
+   state, as `gqrx_init` does (gqrx.c:217):
+
+   ```c
+   static int myapp_init(const struct ft_cfg *cfg)
+   {
+       ...
+       g.host = cfg->myapp_host;
+       g.port = cfg->myapp_port;
+       g.verbose = cfg->verbose;
+       return 0;
+   }
+   ```
+
+That is all the core requires. Everything else — the protocol, the matching,
+the fail-open behavior — is your plugin's business.
+
+> The `install.sh` config plumbing is gqrx-specific too: `/etc/freq-tuner/config`
+> only defines `GQRX_HOST`/`GQRX_PORT`, and the systemd launcher only maps them
+> into the `--gqrx-*` arguments. To make your plugin's settings editable from
+> `/etc/freq-tuner/config`, mirror that: add `<NAME>_HOST`/`<NAME>_PORT` to the
+> config written by `install.sh` and append
+> `--myapp-host $MYAPP_HOST --myapp-port $MYAPP_PORT` to the `ARGS` line in the
+> generated launcher.
 
 ### Fail-open
 
