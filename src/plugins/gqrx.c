@@ -306,7 +306,7 @@ static void gqrx_deinit(void)
 
 struct ft_plugin ft_plugin_gqrx = {
     .name = "gqrx",
-    .apps = "gqrx",
+    .apps = "gqrx,dk.gqrx.gqrx",
     .init = gqrx_init,
     .focus = gqrx_focus,
     .tick = gqrx_tick,

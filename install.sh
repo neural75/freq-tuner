@@ -45,8 +45,8 @@ device_name() {
         || echo "$1"
 }
 
-# Print "NAME|DEVICE|VENDOR" for every VIRTUAL (uinput) event device that
-# exposes the volume-knob keys (KEY_MUTE / KEY_VOLUMEDOWN / KEY_VOLUMEUP).
+# Print "NAME|DEVICE|VENDOR" for every VIRTUAL (uinput) event device
+# that exposes the volume-knob keys (KEY_MUTE / KEY_VOLUMEDOWN / KEY_VOLUMEUP).
 # Read-only probing, no grab. VENDOR is the device's sysfs vendor id: the
 # source clone that the grabber publishes copies the physical keyboard's
 # id, while a pipeline's own uinput output clone has none.
@@ -66,9 +66,26 @@ detect_knob_devices() {
     done
 }
 
+# The device previously chosen and stored in the config, if it is still a
+# live knob device. Preferring it makes a re-install pick the same source
+# clone the running pipeline already uses, without probing grab state.
+previous_device() {
+    local prev
+    if [ ! -r "$CFG" ]; then
+        return 0
+    fi
+    prev="$(sed -n 's/^DEVICE="\(.*\)"$/\1/p' "$CFG" | head -1)"
+    if [ -z "$prev" ] || [ ! -e "$prev" ]; then
+        return 0
+    fi
+    if "$BASE_DIR/knobprobe" "$prev" >/dev/null 2>&1; then
+        printf '%s\n' "$prev"
+    fi
+}
+
 choose_device() {
     local -a names=() links=() vendors=() snames=() slinks=()
-    local sel n l v i
+    local prev sel n l v i
 
     while IFS='|' read -r n l v; do
         names+=("$n"); links+=("$l"); vendors+=("$v")
@@ -81,8 +98,21 @@ choose_device() {
         exit 1
     fi
 
-    # Prefer the source clone, which carries the physical keyboard's
-    # vendor id. Pipeline output clones (no id) are filtered out.
+    # 1) Prefer the device chosen by a previous install, if still present.
+    prev="$(previous_device)"
+    if [ -n "$prev" ]; then
+        for i in "${!links[@]}"; do
+            if [ "$prev" = "${links[$i]}" ]; then
+                DEVICE="${links[$i]}"
+                DEVNAME="${names[$i]}"
+                echo "    source clone : $DEVICE (as previously configured)"
+                return
+            fi
+        done
+    fi
+
+    # 2) Prefer the source clone, which carries the physical keyboard's
+    #    vendor id. Pipeline output clones (no id) are filtered out.
     for i in "${!links[@]}"; do
         if [ -n "${vendors[$i]}" ]; then
             snames+=("${names[$i]}")

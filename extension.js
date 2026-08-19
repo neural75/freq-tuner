@@ -9,17 +9,13 @@
  * SPDX-License-Identifier: MIT
  */
 import Gio from 'gi://Gio';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const SOCKET_PATH = '/run/freq-tuner/focus.sock';
 
-export default class FreqTunerFocus {
-    constructor() {
-        this._socket = null;
-        this._focusId = 0;
-        this._last = '';
-    }
-
+export default class FreqTuner extends Extension {
     enable() {
+        this._settings = this.getSettings();
         this._socket = Gio.Socket.new(Gio.SocketFamily.UNIX,
             Gio.SocketType.DATAGRAM, Gio.SocketProtocol.DEFAULT);
         this._focusId = global.display.connect('notify::focus-window',
@@ -39,6 +35,8 @@ export default class FreqTunerFocus {
             this._socket = null;
         }
         this._last = '';
+        if (this._settings !== null)
+            this._settings = null;
     }
 
     _windowClass(window) {
@@ -48,7 +46,20 @@ export default class FreqTunerFocus {
     }
 
     _onFocusChanged() {
-        const cls = this._windowClass(global.display.focus_window);
+        const window = global.display.focus_window;
+        const cls = this._windowClass(window);
+
+        if (this._settings !== null && this._settings.get_boolean('log-window-classes')) {
+            const inst = window !== null
+                ? (window.get_wm_class_instance() || '')
+                : '';
+            const wmclass = window !== null ? (window.get_wm_class() || '') : '';
+            const title = window !== null
+                ? (window.get_title() || window.get_wm_class() || '?')
+                : '(none)';
+            console.log(`[freq-tuner] focus: wm_class="${wmclass}" instance="${inst}" sent="${cls}" window="${title}"`);
+        }
+
         if (cls === this._last)
             return;
         this._last = cls;
