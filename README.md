@@ -8,41 +8,54 @@ window the knob behaves normally.
 
 ## How it works
 
-1. A keyboard grabber (e.g. a [KMonad](https://github.com/kmonad/kmonad)-style
-   setup or any interception grabber) turns the physical knob into a virtual
-   input device.
-2. `freq-tuner` sits in an
-   [interception-tools](https://gitlab.com/interception/linux/plugins)
-   pipeline, reading that device and routing knob ticks to gqrx:
+Your keyboard's volume knob becomes a dedicated tuning dial. While the gqrx
+window is focused, every turn of the knob is sent to the receiver instead of
+changing the system volume.
 
-       interception -g $DEVICE | freq-tuner | uinput -d $DEVICE
+- **The knob** — a keyboard grabber exposes your physical knob as a virtual
+  device, so it can be routed without affecting anything else.
+- **The router** — `freq-tuner` watches that device and forwards knob turns
+  to gqrx.
+- **The focus check** — a GNOME Shell extension tells the router which window
+  is currently focused. The knob tunes gqrx only when gqrx is the active
+  window; in every other app it works exactly as before.
 
-3. A GNOME Shell extension watches focus changes and tells `freq-tuner`
-   which window is focused. Only when **gqrx** has focus are the knob ticks
-   consumed and sent to the receiver (via gqrx's remote-control port).
-
-**Fail-open**: if focus cannot be determined or gqrx is not running, the
-event falls through to the virtual device, so the knob never "breaks".
+**Default behavior** — by default the knob keeps its normal behavior. Only
+when gqrx is focused and responding does it tune the receiver instead.
 
 ## Components
 
-- **`freq-tuner`** — the router daemon (`src/`). Reads evdev events on stdin,
+- **`freq-tuner`** — the router service (`src/`). Reads evdev events on stdin,
   writes them on stdout, and routes ticks to the gqrx plugin
   (`src/plugins/gqrx.c`) when gqrx is focused.
 - **`knobprobe`** — a read-only probe that lists virtual event devices
   exposing the volume-knob keys (EVIOCGBIT only, never grabs).
 - **GNOME Shell extension** (`extension.js`, `prefs.js`, `schemas/`) — watches
   focus changes and sends the focused window's `WM_CLASS` as a datagram to the
-  daemon's UNIX DGRAM socket.
+  service's UNIX DGRAM socket.
 
 ## Requirements
 
-- [interception-tools](https://gitlab.com/interception/linux/plugins)
-  (interception + uinput) and a keyboard grabber that turns your knob into a
-  virtual device
-- [gqrx](https://gqrx.dk/) with remote control enabled
-- a C compiler and `glib-compile-schemas` (for the extension)
-- GNOME Shell 50
+- **A keyboard grabber** — software that intercepts your keyboard and makes
+  the volume knob available as a separate, routable device. This is what lets
+  the knob be tuned without affecting normal typing.
+- **interception-tools** — provides the `interception` and `uinput` commands
+  the pipeline runs on (`interception -g DEVICE | freq-tuner | uinput -d
+  DEVICE`). On Ubuntu/Debian it is installed automatically by `install.sh`
+  (`sudo apt install interception-tools`), or install it beforehand.
+- **[gqrx](https://gqrx.dk/) with remote control enabled** — the router talks
+  to gqrx over its remote-control port to set the frequency. Remote control is
+  a built-in gqrx feature (default `127.0.0.1:7356`); enable it in gqrx's
+  settings.
+- **GNOME Shell 50** — required by the focus-watcher extension.
+- **Build tools** — a C compiler, `make`, and the kernel headers
+  (`linux-libc-dev`, which provides `/usr/include/linux/input.h`). On
+  Ubuntu/Debian:
+
+      sudo apt install build-essential linux-libc-dev
+
+  plus `glib-compile-schemas` (from `libglib2.0-bin`) to install the
+  extension's settings.
 
 ## Build
 
