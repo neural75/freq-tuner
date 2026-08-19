@@ -26,11 +26,24 @@ changing the system volume.
 **Default behavior** — by default the knob keeps its normal behavior. Only
 when gqrx is focused and responding does it tune the receiver instead.
 
+## Using the knob
+
+While gqrx is focused, the knob tunes the receiver:
+
+- **Turn the knob** to step the frequency. The step size follows the filter
+  width gqrx is using right now, so tuning always matches the current zoom.
+- **Press the knob** to toggle between coarse tuning (one full filter width
+  per step) and fine tuning (one tenth of a filter width per step).
+
+The knob push never reaches the system, so pressing it while gqrx is focused
+only changes the tuning mode.
+
 ## Components
 
 - **`freq-tuner`** — the router service (`src/`). Reads evdev events on stdin,
-  writes them on stdout, and routes ticks to the gqrx plugin
-  (`src/plugins/gqrx.c`) when gqrx is focused.
+  writes them on stdout, and routes ticks to the plugin matching the focused
+  application. Plugins live in `src/plugins/` (see
+  [`src/plugins/README.md`](src/plugins/README.md) to write one).
 - **`knobprobe`** — a read-only probe that lists virtual event devices
   exposing the volume-knob keys (EVIOCGBIT only, never grabs).
 - **GNOME Shell extension** (`extension.js`, `prefs.js`, `schemas/`) — watches
@@ -50,7 +63,9 @@ when gqrx is focused and responding does it tune the receiver instead.
 - **[gqrx](https://gqrx.dk/) with remote control enabled** — the router talks
   to gqrx over its remote-control port to set the frequency. Remote control is
   a built-in gqrx feature (default `127.0.0.1:7356`); enable it in gqrx's
-  settings.
+  settings. gqrx is currently the only supported application; other SDR
+  software can be supported by writing a plugin
+  ([`src/plugins/README.md`](src/plugins/README.md)).
 - **GNOME Shell 50** — required by the focus-watcher extension.
 - **Build tools** — a C compiler, `make`, and the kernel headers
   (`linux-libc-dev`, which provides `/usr/include/linux/input.h`). On
