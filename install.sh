@@ -284,6 +284,25 @@ if ! systemctl is-active --quiet "$SERVICE"; then
 fi
 echo "    $SERVICE ACTIVE"
 
+echo "==> Installing the GNOME Shell extension"
+UUID=freq-tuner@neural75.github.com
+EXT_ZIP="$BASE_DIR/$UUID.shell-extension.zip"
+if [ ! -f "$EXT_ZIP" ]; then
+    echo "ERROR: $EXT_ZIP does not exist." >&2
+    echo "       Build first, as a normal user:" >&2
+    echo "         cd $BASE_DIR && make" >&2
+    exit 1
+fi
+REAL_USER="${SUDO_USER:-$LOGNAME}"
+if [ "$REAL_USER" = "root" ]; then
+    echo "    cannot determine the session user; extension install skipped."
+    echo "    install it manually as your user:"
+    echo "      gnome-extensions install $EXT_ZIP"
+else
+    runuser -u "$REAL_USER" -- gnome-extensions install --force "$EXT_ZIP"
+    echo "    extension installed for $REAL_USER"
+fi
+
 cat <<EOF
 
 ==================================================
@@ -294,6 +313,9 @@ cat <<EOF
  Disable now  : sudo systemctl stop $SERVICE
  Make it stick: sudo systemctl enable $SERVICE
  Remove all   : sudo $BASE_DIR/uninstall.sh
+
+ Extension    : after logging out and back in, enable it in
+                 Extension Manager, or: gnome-extensions enable $UUID
 
  It is NOT enabled at boot: if anything goes wrong, reboot.
 

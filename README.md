@@ -65,7 +65,8 @@ when gqrx is focused and responding does it tune the receiver instead.
 
     make
 
-Produces `freq-tuner` and `knobprobe`.
+Produces `freq-tuner`, `knobprobe`, and the extension bundle
+`freq-tuner@neural75.github.com.shell-extension.zip`.
 
 ## Install the service
 
@@ -73,7 +74,14 @@ Produces `freq-tuner` and `knobprobe`.
 
 The installer detects the virtual knob device, writes
 `/etc/freq-tuner/config`, installs the binaries and the systemd unit
-`freq-tuner.service`, and starts it.
+`freq-tuner.service`, starts it, and installs the GNOME Shell extension for
+the session user.
+
+> **After the script finishes, log out and back in** so GNOME Shell picks up the
+> newly installed extension, then enable it:
+>
+> - in **Extension Manager**: find **freq-tuner** and turn it on, or
+> - from a terminal: `gnome-extensions enable freq-tuner@neural75.github.com`
 
 > The service is started but **not enabled** at boot: a reboot restores the
 > original configuration.
@@ -82,16 +90,23 @@ Status: `./status.sh`
 
 Uninstall: `sudo ./uninstall.sh`
 
-## Install the GNOME Shell extension
+## Install the extension manually
 
-    ./extension-install.sh
+`./install.sh` already does this. Use these steps only when you rebuilt the
+extension yourself or installed the service without the extension.
 
-Then enable it (a session restart picks up the new extension):
+Build the extension bundle (also built by a plain `make`):
 
+    make extension
+
+Then install and enable it:
+
+    gnome-extensions install freq-tuner@neural75.github.com.shell-extension.zip
     gnome-extensions enable freq-tuner@neural75.github.com
 
-The extension's preferences show the service status, the grabbed knob device,
-and where to find the debug log (`journalctl --user -f | grep freq-tuner`).
+A session restart picks up a newly installed extension. The extension's
+preferences show the service status, the grabbed knob device, and where to
+find the debug log (`journalctl --user -f | grep freq-tuner`).
 
 ## Configuration
 
