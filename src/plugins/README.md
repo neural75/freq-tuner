@@ -1,10 +1,11 @@
 # Writing a plugin
 
-`freq-tuner` supports one SDR application at a time through a small plugin
-interface (`src/plugin.h`). A plugin turns rotary ticks into a command for a
-specific program. Only **gqrx** ships today, but any other SDR program that
-can be driven from the command line or over the network can be added the same
-way.
+`freq-tuner` drives an SDR application through a small plugin interface
+(`src/plugin.h`). A plugin turns rotary ticks into a command for a specific
+program. Only **gqrx** ships today, but any other SDR program that can be
+driven from the command line or over the network can be added the same way.
+Several plugins can be compiled in at once; the one matching the focused
+window handles the knob.
 
 The interface is deliberately small: a plugin declares its name, the
 applications it reacts to, and up to six callbacks.
