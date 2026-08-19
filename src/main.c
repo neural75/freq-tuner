@@ -49,6 +49,7 @@ static uint8_t          swallow[KEY_CNT];
 static struct ft_plugin *active;
 
 static int              verbose;
+static volatile sig_atomic_t stop_requested;
 
 static long long now_ms(void)
 {
@@ -181,13 +182,20 @@ static void read_stdin(void)
     }
     if (n == 0) {
         /* upstream (interception) closed the pipe */
-        exit(0);
+        stop_requested = 1;
+        return;
     }
     evlen += (size_t)n;
     process_events();
 }
 
 /* ------------------------------------------------------------------ main */
+
+static void handler_stop(int sig)
+{
+    (void)sig;
+    stop_requested = 1;
+}
 
 static void usage(FILE *out)
 {
@@ -258,6 +266,8 @@ int main(int argc, char **argv)
     cfg.verbose = verbose;
 
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGTERM, handler_stop);
+    signal(SIGINT, handler_stop);
 
     ft_plugin_init_all(&cfg);
 
@@ -278,7 +288,7 @@ int main(int argc, char **argv)
 
     update_active(focus);
 
-    for (;;) {
+    while (!stop_requested) {
         int rc;
 
         rc = poll(fds, (nfds_t)nfds, LOOP_TIMEOUT_MS);
@@ -286,7 +296,7 @@ int main(int argc, char **argv)
             if (errno == EINTR)
                 continue;
             perror(PROG ": poll");
-            return 1;
+            break;
         }
 
         if (fds[0].revents & POLLIN)
@@ -304,5 +314,6 @@ int main(int argc, char **argv)
         }
     }
 
+    ft_focus_free(focus);
     return 0;
 }

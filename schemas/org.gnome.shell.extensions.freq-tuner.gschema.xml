@@ -2,9 +2,9 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.freq-tuner" path="/org/gnome/shell/extensions/freq-tuner/">
     <key name="log-window-classes" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Log focused window classes</summary>
-      <description>Log every focused window's WM_CLASS and WM_CLASS instance to the journal. On by default to help debugging; disable once the routing works.</description>
+      <description>Log every focused window's WM_CLASS and WM_CLASS instance to the journal. Enable for debugging the routing.</description>
     </key>
   </schema>
 </schemalist>
