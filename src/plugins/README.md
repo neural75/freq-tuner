@@ -72,8 +72,7 @@ driving it. The gqrx plugin, for example, matches both the flatpak
 ```
 
 To find the class of an application, run it, focus it, and check the class
-the focus watcher reports (or use `xprop`/`xdotool getactivewindow
-getwindowclassname` on an X11 session).
+with wayland looking glass command: `ALT-F2 lg` -> Windows tab
 
 ## Adding a plugin, step by step
 
