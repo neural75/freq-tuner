@@ -123,6 +123,13 @@ A session restart picks up a newly installed extension. The extension's
 preferences show the service status, the grabbed knob device, and where to
 find the debug log (`journalctl --user -f | grep freq-tuner`).
 
+<p align="center">
+  <picture>
+    <source srcset="./media/freq-tuner-extension.png" > 
+    <img alt="logo" src="./media/freq-tuner-extension.png">
+  </picture>
+</p>
+
 ## Configuration
 
 Edit `/etc/freq-tuner/config` and restart the service to apply:
