@@ -2,6 +2,9 @@
 
 Tune **gqrx** with the volume knob on your keyboard.
 
+> **Requires a keyboard with a dedicated volume knob** (typically found on
+> mechanical keyboards). Without a physical knob there is nothing to route.
+
 When gqrx is the focused application, turning the knob on your keyboard tunes
 the radio receiver instead of changing the system volume. In every other
 window the knob behaves normally.
@@ -36,12 +39,13 @@ when gqrx is focused and responding does it tune the receiver instead.
 
 ## Requirements
 
-- **A keyboard grabber** — software that intercepts your keyboard and makes
-  the volume knob available as a separate, routable device. This is what lets
-  the knob be tuned without affecting normal typing.
+- **A keyboard with a volume knob** — the knob is the input device freq-tuner
+  routes, so a keyboard with a rotary volume knob (common on mechanical
+  keyboards) is required.
 - **interception-tools** — provides the `interception` and `uinput` commands
-  the pipeline runs on (`interception -g DEVICE | freq-tuner | uinput -d
-  DEVICE`). On Ubuntu/Debian it is installed automatically by `install.sh`
+  that grab the knob's virtual device and publish the routed events, running
+  the pipeline (`interception -g DEVICE | freq-tuner | uinput -d DEVICE`).
+  On Ubuntu/Debian it is installed automatically by `install.sh`
   (`sudo apt install interception-tools`), or install it beforehand.
 - **[gqrx](https://gqrx.dk/) with remote control enabled** — the router talks
   to gqrx over its remote-control port to set the frequency. Remote control is
