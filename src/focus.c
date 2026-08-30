@@ -22,7 +22,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#define CLASS_CAP 64
+#define CLASS_CAP 256
 
 struct ft_focus {
     int         sockfd;

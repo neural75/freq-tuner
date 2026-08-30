@@ -109,9 +109,14 @@ export default class FreqTunerPreferences extends ExtensionPreferences {
             const text = new TextDecoder().decode(contents);
             const cfg = {};
             for (const line of text.split('\n')) {
-                const match = line.match(/^([A-Z_]+)="?(.*?)"?\s*$/);
-                if (match)
+                const match = line.match(/^([A-Z_]+)="(.*)"$/);
+                if (match) {
                     cfg[match[1]] = match[2];
+                    continue;
+                }
+                const plain = line.match(/^([A-Z_]+)=(.*)$/);
+                if (plain)
+                    cfg[plain[1]] = plain[2];
             }
             return cfg;
         } catch (e) {

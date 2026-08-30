@@ -87,6 +87,10 @@ static void update_active(struct ft_focus *focus)
         if (p != NULL)
             p->focus(1);
         active = p;
+        /* Drop any half-swallowed press: the release of a key consumed by
+         * the previous plugin can arrive now, and a stale swallow would
+         * wrongly keep a later autorepeat out of the system. */
+        memset(swallow, 0, sizeof(swallow));
     }
 }
 
@@ -237,7 +241,16 @@ static void parse_args(int argc, char **argv, struct ft_cfg *cfg,
     while ((c = getopt_long(argc, argv, "h", longopts, NULL)) != -1) {
         switch (c) {
         case 1: cfg->gqrx_host = optarg; break;
-        case 2: cfg->gqrx_port = atoi(optarg); break;
+        case 2: {
+            long port = atol(optarg);
+            if (port < 1 || port > 65535) {
+                fprintf(stderr, PROG ": invalid --gqrx-port '%s' "
+                        "(must be 1-65535)\n", optarg);
+                exit(1);
+            }
+            cfg->gqrx_port = (int)port;
+            break;
+        }
         case 3: *sock_path = optarg; break;
         case 6: verbose = 1; break;
         case 7:

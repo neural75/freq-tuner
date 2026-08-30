@@ -10,6 +10,8 @@ BINDIR  ?= $(PREFIX)/bin
 TARGET := freq-tuner
 PROBE  := knobprobe
 EXTENSION_ZIP := freq-tuner@neural75.github.com.shell-extension.zip
+EXT_FILES := extension.js prefs.js metadata.json \
+             $(wildcard schemas/*.xml) build-extension.sh
 
 SRC := src/main.c src/plugin.c src/focus.c src/plugins/gqrx.c
 OBJ := $(SRC:.c=.o)
@@ -24,8 +26,11 @@ $(TARGET): $(OBJ)
 $(PROBE): src/knobprobe.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
-$(EXTENSION_ZIP):
+$(EXTENSION_ZIP): $(EXT_FILES)
 	./build-extension.sh
+
+.PHONY: extension
+extension: $(EXTENSION_ZIP)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
