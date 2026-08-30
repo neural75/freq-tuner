@@ -35,7 +35,7 @@
 #include <unistd.h>
 
 #define PROG        "freq-tuner"
-#define VERSION     "0.1"
+#define VERSION     "1.0"
 
 #define EV_CAP      256u
 
