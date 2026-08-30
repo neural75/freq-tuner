@@ -1,6 +1,6 @@
 {
   "name": "freq-tuner",
-  "description": "Routes the in focus window to freq-tuner daemon",
+  "description": "Routes the in focus window to freq-tuner service",
   "uuid": "freq-tuner@neural75.github.com",
   "url": "https://github.com/neural75/freq-tuner",
   "settings-schema": "org.gnome.shell.extensions.freq-tuner",
