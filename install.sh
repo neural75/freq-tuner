@@ -241,6 +241,30 @@ cat > "$RUNNER" <<EOF
 . $CFG
 ARGS="--gqrx-host \$GQRX_HOST --gqrx-port \$GQRX_PORT --focus-sock \$FOCUS_SOCK"
 [ "\$VERBOSE" = 1 ] && ARGS="\$ARGS --verbose"
+
+# The keyboard grabber recreates its virtual knob device after a suspend,
+# USB re-enumeration or logout, usually with a new event number. If the
+# configured node is gone (or is no longer a knob device), wait for a
+# virtual knob device to appear.
+if [ ! -e "\$DEVICE" ] || ! $PROBE "\$DEVICE" >/dev/null 2>&1; then
+    echo "freq-tuner-run: \$DEVICE is not a usable knob device, waiting" >&2
+    while :; do
+        for d in /dev/input/event*; do
+            [ -e "\$d" ] || continue
+            case "\$(readlink -f "/sys/class/input/\$(basename "\$d")/device" 2>/dev/null)" in
+                */devices/virtual/*) ;;
+                *) continue ;;
+            esac
+            if $PROBE "\$d" >/dev/null 2>&1; then
+                DEVICE="\$d"
+                break 2
+            fi
+        done
+        sleep 1
+    done
+    echo "freq-tuner-run: using \$DEVICE" >&2
+fi
+
 $INTERCEPTION -g "\$DEVICE" | $BIN \$ARGS | $UINPUT -d "\$DEVICE"
 EOF
 chmod 755 "$RUNNER"
@@ -252,7 +276,8 @@ cat > "$UNIT" <<EOF
 # Grabs the VIRTUAL volume-knob device that the keyboard grabber publishes
 # (never the physical keyboard). Sleeps 1s before grabbing so a manually
 # started/restarted service cannot land mid-keystroke and split a key
-# across the grab boundary.
+# across the grab boundary. Restart=always (with the launcher waiting for
+# the device) brings the pipeline back after a suspend or USB re-enumeration.
 [Unit]
 Description=freq-tuner rotary tuning router
 
@@ -261,7 +286,7 @@ Type=simple
 ExecStartPre=/bin/mkdir -p /run/freq-tuner
 ExecStartPre=/bin/sleep 1
 ExecStart=$RUNNER
-Restart=on-failure
+Restart=always
 RestartSec=2
 CPUSchedulingPolicy=fifo
 CPUSchedulingPriority=20

@@ -312,7 +312,10 @@ int main(int argc, char **argv)
             break;
         }
 
-        if (fds[0].revents & POLLIN)
+        /* A hangup on stdin means the upstream interception process is gone.
+         * read_stdin() sees the EOF and stops the loop; without watching
+         * POLLHUP, poll() would return immediately forever and spin. */
+        if (fds[0].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL))
             read_stdin();
         if (fds[1].fd >= 0 && (fds[1].revents & POLLIN))
             ft_focus_handle(focus);
